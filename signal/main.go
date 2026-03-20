@@ -96,6 +96,7 @@ stop:
 			// search all have true
 			all := true
 			for _, c := range connsInfo {
+				fmt.Println(c)
 				if c.room == room {
 					if !c.wkn {
 						all = false
