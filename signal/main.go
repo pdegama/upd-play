@@ -107,7 +107,9 @@ stop:
 			// broadcast wkg to all
 			if all {
 				for _, ci := range connsInfo {
-					ci.conn.Write([]byte("sig/start/\n"))
+					if ci.room == room {
+						ci.conn.Write([]byte("sig/start/\n"))
+					}
 				}
 			}
 

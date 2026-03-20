@@ -9,11 +9,16 @@ import (
 	"time"
 )
 
-var sigAddr string = "46.62.235.81:9090"
+var (
+	sigAddr     string = "46.62.235.81:9090"
+	knowIp4Addr        = "192.168.0.1:5601"
+	knowIp6Addr        = "[::]:5602"
+)
 
 func main() {
 	room := os.Args[1]
 	go findPeer("local/ip4", room+"_local_ip4")
+	go findPeer("remote/ip4", room+"_remote_ip4")
 	// go findPeer("local/ip6", room+"_local_ip6")
 	for {
 	}
@@ -95,8 +100,49 @@ func findAndSendAddrToSig(sig net.Conn, peer *net.UDPConn, peerType string) {
 		fmt.Println("peer loacl addr", peer.LocalAddr().String())
 		sigStr := fmt.Sprintf("sig/%s/\n", peer.LocalAddr().String())
 		sig.Write([]byte(sigStr))
-	case "remote/ip4":
-	case "remote/ip6":
+	case "remote/ip4", "remote/ip6":
+		network := "udp4"
+		know := knowIp4Addr
+
+		if peerType == "remote/ip6" {
+			network = "udp6"
+			know = knowIp6Addr
+		}
+
+		knowArrd, err := net.ResolveUDPAddr(network, know)
+		if err != nil {
+			fmt.Println("Error while resolve knowip4")
+			return
+		}
+		for i := 0; i > 5; i++ {
+			peer.WriteToUDP([]byte("ping/\n"), knowArrd)
+			time.Sleep(250 * time.Millisecond)
+		}
+
+		// request to address
+		peer.WriteToUDP([]byte("want/\n"), knowArrd)
+
+		go func(peer *net.UDPConn, knowAddr *net.UDPAddr) {
+			for {
+				peer.WriteToUDP([]byte("ping/\n"), knowArrd)
+				time.Sleep(250 * time.Millisecond)
+			}
+		}(peer, knowArrd)
+
+		for {
+			addrBuff := make([]byte, 512)
+			rl, _, err := peer.ReadFromUDP(addrBuff)
+			if err != nil {
+				fmt.Println("Error while read from know server")
+				return
+			}
+			recvParts := strings.Split(string(addrBuff[:rl]), "/")
+			if recvParts[0] == "addr" {
+				sigStr := fmt.Sprintf("sig/%s/\n", recvParts[1])
+				sig.Write([]byte(sigStr))
+				break
+			}
+		}
 	}
 }
 
