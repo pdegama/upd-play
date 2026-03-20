@@ -11,14 +11,15 @@ import (
 
 var (
 	sigAddr     string = "46.62.235.81:9090"
-	knowIp4Addr        = "192.168.0.1:5601"
-	knowIp6Addr        = "[::]:5602"
+	knowIp4Addr        = "46.62.235.81:5601"
+	knowIp6Addr        = "[2a01:4f9:c013:4a91::1]:5602"
 )
 
 func main() {
 	room := os.Args[1]
 	go findPeer("local/ip4", room+"_local_ip4")
 	go findPeer("remote/ip4", room+"_remote_ip4")
+	go findPeer("remote/ip6", room+"_remote_ip6")
 	// go findPeer("local/ip6", room+"_local_ip6")
 	for {
 	}
@@ -125,7 +126,7 @@ func findAndSendAddrToSig(sig net.Conn, peer *net.UDPConn, peerType string) {
 		go func(peer *net.UDPConn, knowAddr *net.UDPAddr) {
 			for {
 				peer.WriteToUDP([]byte("ping/\n"), knowArrd)
-				time.Sleep(250 * time.Millisecond)
+				time.Sleep(500 * time.Millisecond)
 			}
 		}(peer, knowArrd)
 

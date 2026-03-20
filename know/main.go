@@ -7,10 +7,9 @@ import (
 )
 
 func main() {
-	go listenKnowServer("udp4", ":5601")
-	go listenKnowServer("udp6", ":5602")
-	for {
-	}
+	go listenKnowServer("udp4", "0.0.0.0:5601")
+	go listenKnowServer("udp6", "[::]:5602")
+	select {}
 }
 
 func listenKnowServer(network string, address string) {
@@ -25,6 +24,8 @@ func listenKnowServer(network string, address string) {
 		panic(err)
 	}
 
+	fmt.Println("conn", conn.LocalAddr())
+
 	rd := make([]byte, 512)
 	for {
 		rl, add, err := conn.ReadFromUDP(rd)
@@ -36,7 +37,7 @@ func listenKnowServer(network string, address string) {
 		parts := strings.Split(string(rd[:rl]), "/")
 		switch parts[0] {
 		case "want":
-			addStr := fmt.Sprintf("addr/%s/\n", addr.String())
+			addStr := fmt.Sprintf("addr/%s/\n", add.String())
 			conn.WriteToUDP([]byte(addStr), add)
 		default:
 		}
